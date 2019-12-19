@@ -117,39 +117,41 @@ class WebpackFreeTexPacker {
     emitHookHandler(compilation, callback) {
         let files = {};
 
-        if(!compilation.options || compilation.options.mode === 'development') {
-            for(let srcPath of this.src) {
-                let path = fixPath(srcPath);
+        for(let srcPath of this.src) {
+            let path = fixPath(srcPath);
 
-                let name = getNameFromPath(path);
+            let name = getNameFromPath(path);
 
-                if(name === '.' || name === '*' || name === '*.*') {
-                    srcPath = srcPath.substr(0, srcPath.length - name.length - 1);
-                    path = fixPath(srcPath);
-                    name = '';
+            if(name === '.' || name === '*' || name === '*.*') {
+                srcPath = srcPath.substr(0, srcPath.length - name.length - 1);
+                path = fixPath(srcPath);
+                name = '';
+            }
+
+            if(isFolder(path)) {
+                if(isExists(srcPath)) {
+                    let list = getFolderFilesList(path, (name ? name + '/' : ''));
+                    for(let file of list) {
+                        let ext = getExtFromPath(file.path);
+                        if(SUPPORTED_EXT.indexOf(ext) >= 0) files[file.name] = file.path;
+                    }
                 }
 
-                if(isFolder(path)) {
-                    if(isExists(srcPath)) {
-                        let list = getFolderFilesList(path, (name ? name + '/' : ''));
-                        for(let file of list) {
-                            let ext = getExtFromPath(file.path);
-                            if(SUPPORTED_EXT.indexOf(ext) >= 0) files[file.name] = file.path;
-                        }
-                    }
-
+                if (compilation.options.mode === 'development') {
                     this.addDependencie(compilation.contextDependencies, srcPath);
 
                     let subFolders = getSubFoldersList(srcPath);
-                    for(let folder of subFolders) {
+                    for (let folder of subFolders) {
                         this.addDependencie(compilation.contextDependencies, folder);
                     }
                 }
-                else {
-                    if(isExists(srcPath)) {
-                        files[getNameFromPath(path)] = path;
-                    }
+            }
+            else {
+                if(isExists(srcPath)) {
+                    files[getNameFromPath(path)] = path;
+                }
 
+                if (compilation.options.mode === 'development') {
                     this.addDependencie(compilation.fileDependencies, srcPath);
                 }
             }
